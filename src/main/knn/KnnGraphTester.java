@@ -106,6 +106,7 @@ import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import perf.SearchPerfTest.ThreadDetails;
+import org.apache.lucene.sandbox.codecs.jvector.*;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 //TODO Lucene may make these unavailable, we should pull in this from hppc directly
@@ -535,11 +536,11 @@ public class KnnGraphTester {
           }
           if (operation.equals("-search-and-stats")) {
             // also print stats, after searching
-            printFanoutHist(indexPath);
+            //printFanoutHist(indexPath);
           }
           break;
         case "-stats":
-          printFanoutHist(indexPath);
+          //printFanoutHist(indexPath);
           break;
       }
     }
@@ -1287,48 +1288,82 @@ public class KnnGraphTester {
     }
   }
 
-  static Codec getCodec(int maxConn, int beamWidth, ExecutorService exec, int numMergeWorker, boolean quantize, int quantizeBits, IndexType indexType, boolean quantizeCompress) {
-    if (quantize && quantizeBits != 1 && indexType == IndexType.FLAT) {
-      throw new IllegalArgumentException("only single bit quantization supports FLAT indices");
-    }
-    if (exec == null) {
-      return new Lucene103Codec() {
-        @Override
-        public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
-          if (quantize) {
-            if (quantizeBits == 1) {
-              return switch (indexType) {
-                case FLAT -> new Lucene102BinaryQuantizedVectorsFormat();
-                case HNSW -> new Lucene102HnswBinaryQuantizedVectorsFormat(maxConn, beamWidth, numMergeWorker, null);
-              };
-            } else {
-              return new Lucene99HnswScalarQuantizedVectorsFormat(maxConn, beamWidth, numMergeWorker, quantizeBits, quantizeCompress, null, null);
-            }
-          } else {
-            return new Lucene99HnswVectorsFormat(maxConn, beamWidth, numMergeWorker, null);
-          }
-        }
-      };
-    } else {
-      return new Lucene103Codec() {
-        @Override
-        public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
-          if (quantize) {
-            if (quantizeBits == 1) {
-              return switch (indexType) {
-                case FLAT -> new Lucene102BinaryQuantizedVectorsFormat();
-                case HNSW -> new Lucene102HnswBinaryQuantizedVectorsFormat(maxConn, beamWidth, numMergeWorker, null);
-              };
-            } else {
-              return new Lucene99HnswScalarQuantizedVectorsFormat(maxConn, beamWidth, numMergeWorker, quantizeBits, quantizeCompress, null, exec);
-            }
-          } else {
-            return new Lucene99HnswVectorsFormat(maxConn, beamWidth, numMergeWorker, exec);
-          }
-        }
-      };
-    }
+//  static Codec getCodec(int maxConn, int beamWidth, ExecutorService exec, int numMergeWorker, boolean quantize, int quantizeBits, IndexType indexType, boolean quantizeCompress) {
+//    if (quantize && quantizeBits != 1 && indexType == IndexType.FLAT) {
+//      throw new IllegalArgumentException("only single bit quantization supports FLAT indices");
+//    }
+//    if (exec == null) {
+//      return new Lucene103Codec() {
+//        @Override
+//        public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
+//          if (quantize) {
+//            if (quantizeBits == 1) {
+//              return switch (indexType) {
+//                case FLAT -> new Lucene102BinaryQuantizedVectorsFormat();
+//                case HNSW -> new Lucene102HnswBinaryQuantizedVectorsFormat(maxConn, beamWidth, numMergeWorker, null);
+//              };
+//            } else {
+//              return new Lucene99HnswScalarQuantizedVectorsFormat(maxConn, beamWidth, numMergeWorker, quantizeBits, quantizeCompress, null, null);
+//            }
+//          } else {
+//            return new Lucene99HnswVectorsFormat(maxConn, beamWidth, numMergeWorker, null);
+//          }
+//        }
+//      };
+//    } else {
+//      return new Lucene103Codec() {
+//        @Override
+//        public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
+//          if (quantize) {
+//            if (quantizeBits == 1) {
+//              return switch (indexType) {
+//                case FLAT -> new Lucene102BinaryQuantizedVectorsFormat();
+//                case HNSW -> new Lucene102HnswBinaryQuantizedVectorsFormat(maxConn, beamWidth, numMergeWorker, null);
+//              };
+//            } else {
+//              return new Lucene99HnswScalarQuantizedVectorsFormat(maxConn, beamWidth, numMergeWorker, quantizeBits, quantizeCompress, null, exec);
+//            }
+//          } else {
+//            return new Lucene99HnswVectorsFormat(maxConn, beamWidth, numMergeWorker, exec);
+//          }
+//        }
+//      };
+//    }
+//  }
+
+  static Codec getCodec(int maxConn, int beamWidth, ExecutorService exec, int numMergeWorker,
+                        boolean quantize, int quantizeBits, IndexType indexType, boolean quantizeCompress) {
+    final int minBatchSizeForQuantization = quantize ? 49_500 : Integer.MAX_VALUE;
+    final boolean mergeOnDisk = true;
+    final float graphMult = 2f;
+    final float searchMult = 2f;
+
+    return new JVectorCodec("JVectorCodec", new Lucene103Codec(), minBatchSizeForQuantization, mergeOnDisk) {
+      @Override
+      public KnnVectorsFormat knnVectorsFormat() {
+        return new JVectorFormat(
+                maxConn,
+                beamWidth,
+                graphMult,
+                searchMult,
+                minBatchSizeForQuantization,
+                mergeOnDisk
+        );
+      }
+    };
   }
+
+//  static Codec getCodec(int maxConn, int beamWidth, ExecutorService exec, int numMergeWorker, boolean quantize, int quantizeBits, IndexType indexType, boolean quantizeCompress) {
+//    // always use our JVectorFormat
+//    return new FilterCodec("JVectorCodec", new Lucene103Codec()) {
+//      final int minBatchSizeForQuantization = quantize ? 49500 : Integer.MAX_VALUE;
+//      @Override
+//      public KnnVectorsFormat knnVectorsFormat() {
+//        // use the ctor that sets maxConn and beamWidth
+//        return new JVectorFormat(maxConn, beamWidth, 2f, 2f, minBatchSizeForQuantization, true);
+//      }
+//    };
+//  }
 
   private static void usage() {
     String error =

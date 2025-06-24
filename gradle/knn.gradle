@@ -26,7 +26,21 @@ def luceneDir = (String) findProperty("external.lucene.repo") + '/lucene'
 // def luceneDir = "/l/trunk/lucene"
 def luceneVersion = (String) findProperty("lucene.version")
 // def luceneVersion = "11.0.0"
-def luceneFT = fileTree(dir: luceneDir, include: "**/*$luceneVersion-SNAPSHOT.jar")
+// Include all necessary Lucene module JARs
+def luceneFT = fileTree(dir: luceneDir, include: [
+        "**/*$luceneVersion-SNAPSHOT.jar",
+        "sandbox/build/libs/*$luceneVersion-SNAPSHOT.jar",
+        "join/build/libs/*$luceneVersion-SNAPSHOT.jar",
+        "queryparser/build/libs/*$luceneVersion-SNAPSHOT.jar",
+        "suggest/build/libs/*$luceneVersion-SNAPSHOT.jar",
+        "grouping/build/libs/*$luceneVersion-SNAPSHOT.jar",
+        "highlighter/build/libs/*$luceneVersion-SNAPSHOT.jar",
+        "analysis/common/build/libs/*$luceneVersion-SNAPSHOT.jar",
+        "misc/build/libs/*$luceneVersion-SNAPSHOT.jar",
+        "luke/lucene-luke-$luceneVersion-SNAPSHOT/jvector-4.0.0-beta.6.jar",
+        "luke/lucene-luke-$luceneVersion-SNAPSHOT/commons-math3-3.6.1.jar",
+        "luke/lucene-luke-$luceneVersion-SNAPSHOT/agrona-1.20.0.jar"
+])
 
 task compileKnn (type: JavaCompile) {
     doFirst {

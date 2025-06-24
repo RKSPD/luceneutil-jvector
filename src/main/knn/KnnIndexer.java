@@ -48,6 +48,7 @@ import org.apache.lucene.misc.index.BPReorderingMergePolicy;
 import org.apache.lucene.misc.index.BpVectorReorderer;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.sandbox.codecs.jvector.*;
 
 import static knn.KnnGraphTester.DOCTYPE_CHILD;
 import static knn.KnnGraphTester.DOCTYPE_PARENT;
@@ -93,7 +94,7 @@ public class KnnIndexer {
   public int createIndex() throws IOException, InterruptedException {
     IndexWriterConfig iwc = new IndexWriterConfig().setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     iwc.setCodec(codec);
-    // iwc.setMergePolicy(NoMergePolicy.INSTANCE);
+    iwc.setMergePolicy(new TieredMergePolicy());
     iwc.setRAMBufferSizeMB(WRITER_BUFFER_MB);
     iwc.setUseCompoundFile(false);
     // iwc.setMaxBufferedDocs(10000);
@@ -102,13 +103,13 @@ public class KnnIndexer {
     iwc.setMaxFullFlushMergeWaitMillis(0);
 
     // aim for more compact/realistic index:
-    TieredMergePolicy tmp = (TieredMergePolicy) iwc.getMergePolicy();
-    tmp.setFloorSegmentMB(256);
-    tmp.setNoCFSRatio(0);
-    // tmp.setSegmentsPerTier(5);
-    if (useBp) {
-      iwc.setMergePolicy(new BPReorderingMergePolicy(iwc.getMergePolicy(), new BpVectorReorderer(KnnGraphTester.KNN_FIELD)));
-    }
+//    TieredMergePolicy tmp = (TieredMergePolicy) iwc.getMergePolicy();
+//    tmp.setFloorSegmentMB(256);
+//    tmp.setNoCFSRatio(0);
+//    // tmp.setSegmentsPerTier(5);
+//    if (useBp) {
+//      iwc.setMergePolicy(new BPReorderingMergePolicy(iwc.getMergePolicy(), new BpVectorReorderer(KnnGraphTester.KNN_FIELD)));
+//    }
 
     ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) iwc.getMergeScheduler();
     // cms.setMaxMergesAndThreads(24, 12);

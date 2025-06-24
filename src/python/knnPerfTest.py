@@ -11,6 +11,8 @@ import multiprocessing
 import re
 import subprocess
 import sys
+import os
+import glob
 
 import benchUtil
 import constants
@@ -52,13 +54,13 @@ PARAMS = {
   #'ndoc': (10000, 100000, 200000, 500000),
   #'ndoc': (2_000_000,),
   #'ndoc': (1_000_000,),
-  "ndoc": (500_000,),
+  "ndoc": (100_000,),
   #'ndoc': (50_000,),
   #'maxConn': (32, 64, 96),
-  "maxConn": (64,),
+  "maxConn": (32,),
   #'maxConn': (32,),
   #'beamWidthIndex': (250, 500),
-  "beamWidthIndex": (250,),
+  "beamWidthIndex": (50,),
   #'beamWidthIndex': (50,),
   #'fanout': (20, 100, 250)
   "fanout": (50,),
@@ -124,7 +126,7 @@ def run_knn_benchmark(checkout, values):
 
   # Cohere dataset
   dim = 768
-  doc_vectors = f"{constants.BASE_DIR}/data/cohere-wikipedia-docs-{dim}d.vec"
+  doc_vectors = f"{constants.BASE_DIR}/data/cohere-wikipedia-docs-5M-{dim}d.vec"
   query_vectors = f"{constants.BASE_DIR}/data/cohere-wikipedia-queries-{dim}d.vec"
   # doc_vectors = f"/lucenedata/enwiki/{'cohere-wikipedia'}-docs-{dim}d.vec"
   # query_vectors = f"/lucenedata/enwiki/{'cohere-wikipedia'}-queries-{dim}d.vec"
@@ -132,7 +134,33 @@ def run_knn_benchmark(checkout, values):
 
   jfr_output = f"{constants.LOGS_DIR}/knn-perf-test.jfr"
 
-  cp = benchUtil.classPathToString(benchUtil.getClassPath(checkout) + (f"{constants.BENCH_BASE_DIR}/build",))
+  #cp = benchUtil.classPathToString(benchUtil.getClassPath(checkout) + (f"{constants.BENCH_BASE_DIR}/build",))
+
+
+  # cp = benchUtil.classPathToString(benchUtil.getClassPath(checkout) + (f"{constants.BENCH_BASE_DIR}/build",))
+  version = "11.0.0"
+  raw_cp_list = list(benchUtil.getClassPath(checkout))
+  lucene_root = checkout.rstrip('/') + '/lucene'
+  with open(f"{checkout}/gradle.properties") as props:
+    for line in props:
+      if line.startswith("lucene.version="):
+        version = line.split("=",1)[1].strip()
+        break
+  filtered = [p for p in raw_cp_list if not p.endswith(f"/sandbox/build/classes/java/main") and not p.endswith(f"/join/build/classes/java/main")]
+  sandbox_jar = f"{lucene_root}/sandbox/build/libs/lucene-sandbox-{version}-SNAPSHOT.jar"
+  join_jar = f"{lucene_root}/join/build/libs/lucene-join-{version}-SNAPSHOT.jar"
+  # Using Luke paths for jvector and dependencies
+  jvector_jar = f"{lucene_root}/luke/build/lucene-luke-{version}-SNAPSHOT/jvector-4.0.0-beta.6.jar"
+  # SLF4J API 2.0.17
+  slf4j_api = f"{lucene_root}/luke/build/lucene-luke-{version}-SNAPSHOT/slf4j-api-2.0.17.jar"
+  # Agrona 1.20.0
+  agrona_jar = f"{lucene_root}/luke/build/lucene-luke-{version}-SNAPSHOT/agrona-1.20.0.jar"
+  # commons-math3-3.6.1.jar
+  commons_math_jar = f"{lucene_root}/luke/build/lucene-luke-{version}-SNAPSHOT/commons-math3-3.6.1.jar"
+  util_build = f"{constants.BENCH_BASE_DIR}/build"
+  cp_list = filtered + [sandbox_jar, join_jar, jvector_jar, util_build, agrona_jar, slf4j_api, commons_math_jar]
+  cp = benchUtil.classPathToString(cp_list)
+
   cmd = constants.JAVA_EXE.split(" ") + [
     "-cp",
     cp,
@@ -148,6 +176,8 @@ def run_knn_benchmark(checkout, values):
     cmd += [f"-XX:StartFlightRecording=dumponexit=true,maxsize=250M,settings={constants.BENCH_BASE_DIR}/src/python/profiling.jfc" + f",filename={jfr_output}"]
 
   cmd += ["knn.KnnGraphTester"]
+
+
 
   all_results = []
   while advance(indexes, values):
