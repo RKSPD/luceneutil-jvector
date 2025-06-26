@@ -54,16 +54,16 @@ PARAMS = {
   #'ndoc': (10000, 100000, 200000, 500000),
   #'ndoc': (2_000_000,),
   #'ndoc': (1_000_000,),
-  "ndoc": (100_000,),
+  "ndoc": (100_001,),
   #'ndoc': (50_000,),
   #'maxConn': (32, 64, 96),
-  "maxConn": (32,),
+  "maxConn": (16,),
   #'maxConn': (32,),
   #'beamWidthIndex': (250, 500),
-  "beamWidthIndex": (50,),
+  "beamWidthIndex": (20,),
   #'beamWidthIndex': (50,),
   #'fanout': (20, 100, 250)
-  "fanout": (50,),
+  "fanout": (300,),
   #'quantize': None,
   #'quantizeBits': (32, 7, 4),
   "numMergeWorker": (12,),
@@ -72,9 +72,9 @@ PARAMS = {
   #'numMergeWorker': (1,),
   #'numMergeThread': (1,),
   "encoding": ("float32",),
-  # 'metric': ('angular',),  # default is angular (dot_product)
+  'metric': ('euclidean',),  # default is angular (dot_product)
   # 'metric': ('mip',),
-  #'quantize': (True,),
+  'quantize': (True,),
   "quantizeBits": (32,),
   # "quantizeBits": (1,),
   # "overSample": (5,), # extra ratio of vectors to retrieve, for testing approximate scoring, e.g. quantized indices
@@ -82,10 +82,10 @@ PARAMS = {
   "topK": (100,),
   # "bp": ("false", "true"),
   #'quantizeCompress': (True, False),
-  "quantizeCompress": (True,),
+  #"quantizeCompress": (True,),
   # "indexType": ("flat", "hnsw"), # index type, only works with singlt bit
   "queryStartIndex": (0,),  # seek to this start vector before searching, to sample different vectors
-  # "forceMerge": (True, False),
+  "forceMerge": (True,),
   #'niter': (10,),
 }
 

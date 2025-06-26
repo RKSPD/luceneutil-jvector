@@ -1353,18 +1353,6 @@ public class KnnGraphTester {
     };
   }
 
-//  static Codec getCodec(int maxConn, int beamWidth, ExecutorService exec, int numMergeWorker, boolean quantize, int quantizeBits, IndexType indexType, boolean quantizeCompress) {
-//    // always use our JVectorFormat
-//    return new FilterCodec("JVectorCodec", new Lucene103Codec()) {
-//      final int minBatchSizeForQuantization = quantize ? 49500 : Integer.MAX_VALUE;
-//      @Override
-//      public KnnVectorsFormat knnVectorsFormat() {
-//        // use the ctor that sets maxConn and beamWidth
-//        return new JVectorFormat(maxConn, beamWidth, 2f, 2f, minBatchSizeForQuantization, true);
-//      }
-//    };
-//  }
-
   private static void usage() {
     String error =
         "Usage: TestKnnGraph [-reindex] [-search {queryfile}|-stats|-check] [-docs {datafile}] [-niter N] [-fanout N] [-maxConn N] [-beamWidth N] [-filterSelectivity N] [-prefilter]";
