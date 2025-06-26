@@ -39,6 +39,7 @@ work/
 .DS_Store
 node_modules/
 knnIndices/
+nn-*.bin
 
 # emacs temporary files
 *~
